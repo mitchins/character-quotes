@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from character_quotes.database import (
+    begin_catalogue_mutation,
     begin_daily_assignment,
     initialize,
     make_engine,
@@ -89,6 +90,15 @@ def test_candidates_are_review_only(service: QuoteService) -> None:
     assert len(service.list()) == 1
 
 
+def test_candidates_reject_invalid_limit_and_required_values(
+    service: QuoteService,
+) -> None:
+    with pytest.raises(ValueError, match="limit must be between 0 and 20"):
+        service.candidates("words", limit=-1)
+    with pytest.raises(ValueError, match="text, author, and work are required"):
+        service.create(item(text="---"))
+
+
 def test_daily_assignment_is_stable_and_recycles_after_cycle(
     service: QuoteService,
 ) -> None:
@@ -111,6 +121,56 @@ def test_no_published_quote_cannot_be_assigned(service: QuoteService) -> None:
     service.create(item(status=QuoteStatus.DRAFT))
     with pytest.raises(LookupError):
         service.ensure_daily_assignment(date(2026, 7, 29))
+
+
+def test_daily_assignment_survives_unpublishing_but_future_days_exclude_quote(
+    service: QuoteService,
+) -> None:
+    first = service.create(item("One"))
+    second = service.create(item("Two", work="Second"))
+    service.session.commit()
+    assigned = service.ensure_daily_assignment(date(2026, 7, 29))
+    service.session.commit()
+    service.update(
+        assigned.id,
+        item(
+            assigned.text,
+            work=assigned.work.title,
+            status=QuoteStatus.DRAFT,
+        ),
+    )
+    service.session.commit()
+    assert service.ensure_daily_assignment(date(2026, 7, 29)).id == assigned.id
+    assert service.ensure_daily_assignment(date(2026, 7, 30)).id in {
+        first.id,
+        second.id,
+    } - {assigned.id}
+
+
+def test_catalogue_mutation_serializes_exact_text_collision(tmp_path: Path) -> None:
+    database = tmp_path / "catalogue.sqlite3"
+    engine = make_engine(str(database))
+    initialize(engine)
+
+    def create(work: str) -> str:
+        worker_engine = make_engine(str(database))
+        worker_db = session_factory(worker_engine)()
+        try:
+            begin_catalogue_mutation(worker_db)
+            QuoteService(worker_db).create(item("One text", work=work))
+            worker_db.commit()
+            return "created"
+        except ExactTextCollisionError:
+            worker_db.rollback()
+            return "collision"
+        finally:
+            worker_db.close()
+            worker_engine.dispose()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(create, ["First", "Second"]))
+    assert sorted(outcomes) == ["collision", "created"]
+    engine.dispose()
 
 
 def test_daily_assignment_serializes_concurrent_requests(tmp_path: Path) -> None:

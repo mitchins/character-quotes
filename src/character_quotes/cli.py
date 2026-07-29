@@ -11,7 +11,13 @@ from typing import Annotated
 import typer
 from sqlalchemy.exc import IntegrityError
 
-from .database import begin_daily_assignment, initialize, make_engine, session_factory
+from .database import (
+    begin_catalogue_mutation,
+    begin_daily_assignment,
+    initialize,
+    make_engine,
+    session_factory,
+)
 from .models import Quote, QuoteStatus
 from .service import (
     DuplicateQuoteError,
@@ -31,6 +37,7 @@ def run_mutation(operation: Callable[[QuoteService], Quote]) -> dict[str, object
     initialize(engine)
     db = session_factory(engine)()
     try:
+        begin_catalogue_mutation(db)
         result = operation(QuoteService(db))
         db.commit()
         return serialize(result)
@@ -39,6 +46,7 @@ def run_mutation(operation: Callable[[QuoteService], Quote]) -> dict[str, object
         raise
     finally:
         db.close()
+        engine.dispose()
 
 
 def quote_input(
@@ -65,7 +73,11 @@ def quote_input(
 
 @app.command()
 def init() -> None:
-    initialize(make_engine())
+    engine = make_engine()
+    try:
+        initialize(engine)
+    finally:
+        engine.dispose()
     typer.echo("Catalogue ready")
 
 
@@ -127,6 +139,7 @@ def check_quote(text: str) -> None:
         )
     finally:
         db.close()
+        engine.dispose()
 
 
 @app.command("list")
@@ -143,12 +156,16 @@ def list_quotes(quote_status: QuoteStatus | None = None) -> None:
         )
     finally:
         db.close()
+        engine.dispose()
 
 
 @app.command()
 def daily(selected_date: Annotated[str | None, typer.Option("--date")] = None) -> None:
     """Return or lazily assign the quote for a day."""
-    requested = date.fromisoformat(selected_date) if selected_date else date.today()
+    try:
+        requested = date.fromisoformat(selected_date) if selected_date else date.today()
+    except ValueError as error:
+        raise typer.BadParameter("--date must be an ISO date (YYYY-MM-DD)") from error
     engine = make_engine()
     initialize(engine)
     db = session_factory(engine)()
@@ -162,6 +179,7 @@ def daily(selected_date: Annotated[str | None, typer.Option("--date")] = None) -
         raise typer.Exit(1) from error
     finally:
         db.close()
+        engine.dispose()
     result["selected_for_date"] = requested.isoformat()
     typer.echo(json.dumps(result, indent=2))
 
@@ -186,20 +204,32 @@ def export(path: Path) -> None:
         )
     finally:
         db.close()
+        engine.dispose()
 
 
 @app.command()
 def import_json(path: Path, dry_run: bool = False) -> None:
     """Import JSON interchange transactionally."""
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("schema_version") != 1 or not isinstance(
-        payload.get("quotes"), list
-    ):
-        raise typer.BadParameter("expected JSON schema_version 1")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(payload, dict)
+            or payload.get("schema_version") != 1
+            or not isinstance(payload.get("quotes"), list)
+        ):
+            raise ValueError
+        if not all(
+            isinstance(item, dict) and {"text", "author", "work"} <= item.keys()
+            for item in payload["quotes"]
+        ):
+            raise ValueError
+    except (json.JSONDecodeError, OSError, ValueError) as error:
+        raise typer.BadParameter("expected JSON schema_version 1") from error
     engine = make_engine()
     initialize(engine)
     db = session_factory(engine)()
     try:
+        begin_catalogue_mutation(db)
         catalogue = QuoteService(db)
         for item in payload["quotes"]:
             catalogue.create(
@@ -212,7 +242,8 @@ def import_json(path: Path, dry_run: bool = False) -> None:
                     citation=item.get("citation"),
                     source_url=item.get("source_url"),
                     status=QuoteStatus(item.get("status", "draft")),
-                )
+                ),
+                allow_exact_reuse=True,
             )
         if dry_run:
             db.rollback()
@@ -223,3 +254,4 @@ def import_json(path: Path, dry_run: bool = False) -> None:
         raise
     finally:
         db.close()
+        engine.dispose()

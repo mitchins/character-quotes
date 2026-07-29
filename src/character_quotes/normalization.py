@@ -27,7 +27,7 @@ _TRANSLATION = str.maketrans(
 def normalize(value: str) -> str:
     """Return a stable matching key without modifying the submitted value."""
     normalized = unicodedata.normalize("NFC", value).translate(_TRANSLATION)
-    punctuation_free = re.sub(r"[^\w\s]", " ", normalized)
+    punctuation_free = re.sub(r"[\W_]+", " ", normalized)
     return re.sub(r"\s+", " ", punctuation_free).strip().casefold()
 
 

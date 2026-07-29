@@ -11,7 +11,13 @@ from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .database import begin_daily_assignment, initialize, make_engine, session_factory
+from .database import (
+    begin_catalogue_mutation,
+    begin_daily_assignment,
+    initialize,
+    make_engine,
+    session_factory,
+)
 from .models import Quote, QuoteStatus
 from .service import (
     DuplicateQuoteError,
@@ -62,6 +68,7 @@ def session() -> Generator[Session, None, None]:
 
 def mutation(operation: Callable[[], Quote], db: Session) -> dict[str, object]:
     try:
+        begin_catalogue_mutation(db)
         result = operation()
         db.commit()
         return serialize(result)

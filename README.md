@@ -43,6 +43,10 @@ been used.
 JSON import/export is a convenience interchange escape hatch, not a backup or
 restore format.
 
+The REST API and CLI serialize quote mutations in SQLite so a collision check
+and its following write are one operation. This is a small-catalogue safeguard,
+not a distributed locking or audit system.
+
 `data/public-domain-seed.json` is a compact development seed built from Austen,
 Brontë, and Doyle works hosted by Project Gutenberg. It is suitable for local
 testing; verify rights in the jurisdiction where you deploy or serve content.

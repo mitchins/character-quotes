@@ -63,7 +63,8 @@ def serialize(quote: Quote) -> dict[str, object]:
 
 def _word_jaccard(left: str, right: str) -> float:
     left_tokens, right_tokens = token_signature(left), token_signature(right)
-    return len(left_tokens & right_tokens) / len(left_tokens | right_tokens)
+    union = left_tokens | right_tokens
+    return len(left_tokens & right_tokens) / len(union) if union else 0.0
 
 
 def _trigram_dice(left: str, right: str) -> float:
@@ -109,7 +110,7 @@ class QuoteService:
         return work
 
     def _validate(self, data: QuoteInput) -> None:
-        if not data.text.strip() or not data.author.strip() or not data.work.strip():
+        if not all(normalize(value) for value in (data.text, data.author, data.work)):
             raise ValueError("text, author, and work are required")
         if data.source_url:
             parsed = urlparse(data.source_url)
@@ -219,6 +220,8 @@ class QuoteService:
         )
 
     def candidates(self, text: str, limit: int = 20) -> Sequence[dict[str, object]]:
+        if not 0 <= limit <= 20:
+            raise ValueError("limit must be between 0 and 20")
         tokens = token_signature(text)
         results: list[tuple[float, float, dict[str, object]]] = []
         for quote in self.list():
