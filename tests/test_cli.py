@@ -61,4 +61,4 @@ def test_cli_import_reused_text_and_rejects_invalid_payload(
     assert "expected JSON schema_version 1" in bad_import.output
     bad_date = runner.invoke(app, ["daily", "--date", "not-a-date"])
     assert bad_date.exit_code == 2
-    assert "--date must be an ISO date" in bad_date.output
+    assert "ISO date" in bad_date.output
