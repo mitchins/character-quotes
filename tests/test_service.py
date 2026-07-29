@@ -44,8 +44,9 @@ def item(
 
 def test_normalized_same_identity_is_rejected(service: QuoteService) -> None:
     original = service.create(item())
+    duplicate = item("  'hello' - world ")
     with pytest.raises(DuplicateQuoteError) as error:
-        service.create(item("  'hello' - world "))
+        service.create(duplicate)
     assert error.value.existing_id == original.id
 
 
@@ -53,23 +54,26 @@ def test_exact_text_different_attribution_requires_override(
     service: QuoteService,
 ) -> None:
     service.create(item())
+    wrong_book = item(work="Wrong book")
     with pytest.raises(ExactTextCollisionError):
-        service.create(item(work="Wrong book"))
+        service.create(wrong_book)
     allowed = service.create(item(work="Deliberate reuse"), allow_exact_reuse=True)
     assert allowed.work.title == "Deliberate reuse"
 
 
 def test_different_character_is_exact_collision(service: QuoteService) -> None:
     service.create(item())
+    different_character = item(character="Someone")
     with pytest.raises(ExactTextCollisionError):
-        service.create(item(character="Someone"))
+        service.create(different_character)
 
 
 def test_edit_collision_preserves_original(service: QuoteService) -> None:
     first = service.create(item())
     second = service.create(item("Another quote", work="Another book"))
+    collision = item(work="Wrong book")
     with pytest.raises(ExactTextCollisionError):
-        service.update(second.id, item(work="Wrong book"))
+        service.update(second.id, collision)
     assert service.get(second.id).text == "Another quote"
     assert service.get(first.id).work.title == "Novel"
 

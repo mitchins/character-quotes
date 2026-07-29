@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Generator
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from pydantic import BaseModel, Field, HttpUrl
@@ -25,6 +25,14 @@ engine = make_engine()
 initialize(engine)
 SessionLocal = session_factory(engine)
 app = FastAPI(title="Character Quotes", version="0.2.0")
+NOT_FOUND: dict[int | str, dict[str, Any]] = {
+    404: {"description": "Quote or daily assignment not found"}
+}
+MUTATION_ERRORS: dict[int | str, dict[str, Any]] = {
+    **NOT_FOUND,
+    409: {"description": "Duplicate or exact-text attribution collision"},
+    422: {"description": "Invalid quote data"},
+}
 
 
 class QuotePayload(BaseModel):
@@ -85,7 +93,7 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/v1/quotes", status_code=status.HTTP_201_CREATED)
+@app.post("/v1/quotes", status_code=status.HTTP_201_CREATED, responses=MUTATION_ERRORS)
 def create_quote(
     payload: QuotePayload,
     db: Annotated[Session, Depends(session)],
@@ -102,7 +110,7 @@ def create_quote(
 @app.get("/v1/quotes")
 def list_quotes(
     db: Annotated[Session, Depends(session)],
-    quote_status: QuoteStatus | None = Query(default=None, alias="status"),
+    quote_status: Annotated[QuoteStatus | None, Query(alias="status")] = None,
 ) -> list[dict[str, object]]:
     return [serialize(quote) for quote in QuoteService(db).list(quote_status)]
 
@@ -121,24 +129,25 @@ def candidate_quotes(
     return list(QuoteService(db).candidates(text))
 
 
-@app.get("/v1/quotes/daily")
+@app.get("/v1/quotes/daily", responses=NOT_FOUND)
 def daily_quote(
     db: Annotated[Session, Depends(session)],
-    selected_date: date = Query(default_factory=date.today),
+    selected_date: Annotated[date | None, Query()] = None,
 ) -> dict[str, object]:
     try:
+        requested_date = selected_date or date.today()
         begin_daily_assignment(db)
-        result = QuoteService(db).ensure_daily_assignment(selected_date)
+        result = QuoteService(db).ensure_daily_assignment(requested_date)
         db.commit()
     except LookupError as error:
         db.rollback()
         raise HTTPException(404, str(error)) from error
     response = serialize(result)
-    response["selected_for_date"] = selected_date.isoformat()
+    response["selected_for_date"] = requested_date.isoformat()
     return response
 
 
-@app.get("/v1/quotes/{quote_id}")
+@app.get("/v1/quotes/{quote_id}", responses=NOT_FOUND)
 def get_quote(
     quote_id: str, db: Annotated[Session, Depends(session)]
 ) -> dict[str, object]:
@@ -148,7 +157,7 @@ def get_quote(
         raise HTTPException(404, "Quote not found") from error
 
 
-@app.patch("/v1/quotes/{quote_id}")
+@app.patch("/v1/quotes/{quote_id}", responses=MUTATION_ERRORS)
 def update_quote(
     quote_id: str,
     payload: QuotePayload,

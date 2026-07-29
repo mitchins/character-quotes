@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 from typing import Annotated
@@ -11,7 +12,7 @@ import typer
 from sqlalchemy.exc import IntegrityError
 
 from .database import begin_daily_assignment, initialize, make_engine, session_factory
-from .models import QuoteStatus
+from .models import Quote, QuoteStatus
 from .service import (
     DuplicateQuoteError,
     ExactTextCollisionError,
@@ -25,12 +26,12 @@ app = typer.Typer(
 )
 
 
-def run_mutation(operation: object) -> dict[str, object]:
+def run_mutation(operation: Callable[[QuoteService], Quote]) -> dict[str, object]:
     engine = make_engine()
     initialize(engine)
     db = session_factory(engine)()
     try:
-        result = operation(QuoteService(db))  # type: ignore[operator]
+        result = operation(QuoteService(db))
         db.commit()
         return serialize(result)
     except Exception:
