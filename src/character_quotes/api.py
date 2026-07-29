@@ -72,6 +72,9 @@ def mutation(operation: Callable[[], Quote], db: Session) -> dict[str, object]:
                 "allow_exact_reuse": True,
             },
         ) from error
+    except LookupError as error:
+        db.rollback()
+        raise HTTPException(404, "Quote not found") from error
     except (ValueError, IntegrityError) as error:
         db.rollback()
         raise HTTPException(422, str(error)) from error

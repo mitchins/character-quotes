@@ -73,3 +73,18 @@ def test_api_candidates_update_and_empty_daily_error() -> None:
         assert updated.json()["status"] == "published"
     finally:
         api.SessionLocal = original
+
+
+def test_patch_missing_quote_returns_not_found() -> None:
+    engine = make_engine("sqlite://")
+    initialize(engine)
+    original = api.SessionLocal
+    api.SessionLocal = session_factory(engine)
+    try:
+        response = TestClient(api.app).patch(
+            "/v1/quotes/not-a-real-id",
+            json={"text": "Text", "author": "Author", "work": "Work"},
+        )
+        assert response.status_code == 404
+    finally:
+        api.SessionLocal = original
