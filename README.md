@@ -43,6 +43,10 @@ been used.
 JSON import/export is a convenience interchange escape hatch, not a backup or
 restore format.
 
+`data/public-domain-seed.json` is a compact development seed built from Austen,
+Brontë, and Doyle works hosted by Project Gutenberg. It is suitable for local
+testing; verify rights in the jurisdiction where you deploy or serve content.
+
 ## Development
 
 ```sh
