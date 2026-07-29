@@ -92,10 +92,10 @@ schema-migration machinery, backup tooling, and a scheduler framework.
 ## Acceptance checks
 
 * A punctuation/Unicode/case variant is rejected as the same quote.
-* The same exact text under a different work is surfaced and requires an
+* Exact text under a different work is surfaced and requires an
   explicit operator decision.
-* The same exact text under a different character is treated the same way.
-* A near typo/shortened wording is shown as a candidate but can never merge or
+* Exact text under a different character is treated the same way.
+* A near-typo/shortened wording is shown as a candidate but can never merge or
   block an entry automatically.
 * Correcting an erroneous work cannot alter another quote's work and cannot
   create a partial author/work row or quote mutation on collision.

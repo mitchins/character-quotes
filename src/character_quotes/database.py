@@ -29,7 +29,7 @@ def make_engine(url: str | None = None) -> Engine:
     if resolved_url.get_backend_name() != "sqlite":
         raise ValueError("only SQLite database URLs are supported")
     options: dict[str, object] = {"connect_args": {"check_same_thread": False}}
-    if str(resolved_url) == "sqlite://":
+    if resolved_url.database in {None, ":memory:"}:
         options["poolclass"] = StaticPool
     engine = create_engine(resolved_url, **options)
 

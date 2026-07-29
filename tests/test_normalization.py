@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.pool import StaticPool
 
 from character_quotes.database import make_engine
 from character_quotes.normalization import fingerprint, normalize
@@ -17,5 +18,6 @@ def test_only_sqlite_urls_are_allowed() -> None:
     engine = make_engine("sqlite+pysqlite://")
     try:
         assert engine.dialect.name == "sqlite"
+        assert isinstance(engine.pool, StaticPool)
     finally:
         engine.dispose()
