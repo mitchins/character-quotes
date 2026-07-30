@@ -30,17 +30,22 @@ Keep the API on loopback unless a trusted authenticating proxy protects it.
 
 ## Container deployment
 
-The published image is `ghcr.io/mitchins/character-quotes:latest`. On a LAN
-host with Docker Compose, clone this repository and run:
+The published image is `ghcr.io/mitchins/character-quotes:latest`. The base
+Compose stack keeps the API on its internal Docker network, where a colocated
+reverse-proxy service can reach `http://character-quotes:8000` without
+publishing a host port.
+
+For intentional LAN exposure, clone this repository and run:
 
 ```sh
-docker compose up -d
+docker compose -f compose.yaml -f compose.lan.yaml up -d
 curl http://localhost:8000/healthz
 ```
 
 `compose.yaml` persists the catalogue in its named `character-quotes-data`
-volume and exposes port 8000 on the host. The API has no authentication: put it
-behind a trusted, authenticated proxy before exposing it beyond a trusted LAN.
+volume. `compose.lan.yaml` is the explicit host-port override. The API has no
+authentication: put it behind a trusted, authenticated proxy before exposing
+it beyond a trusted LAN.
 
 To exercise the same stack before an image is published, build locally:
 

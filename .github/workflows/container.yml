@@ -28,7 +28,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=raw,value=nightly,enable=${{ github.event_name == 'schedule' }}
             type=schedule,pattern=nightly-{{date 'YYYYMMDD'}}
             type=sha,format=short

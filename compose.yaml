@@ -1,8 +1,8 @@
 services:
   character-quotes:
     image: ghcr.io/mitchins/character-quotes:latest
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       CHARACTER_QUOTES_DATABASE: sqlite:////data/character_quotes.sqlite3
     volumes:
