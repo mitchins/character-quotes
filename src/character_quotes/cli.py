@@ -223,7 +223,7 @@ def import_json(path: Path, dry_run: bool = False) -> None:
             for item in payload["quotes"]
         ):
             raise ValueError
-    except (json.JSONDecodeError, OSError, ValueError) as error:
+    except (OSError, ValueError) as error:
         raise typer.BadParameter("expected JSON schema_version 1") from error
     engine = make_engine()
     initialize(engine)

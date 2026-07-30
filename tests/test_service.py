@@ -95,8 +95,9 @@ def test_candidates_reject_invalid_limit_and_required_values(
 ) -> None:
     with pytest.raises(ValueError, match="limit must be between 0 and 20"):
         service.candidates("words", limit=-1)
+    invalid = item(text="---")
     with pytest.raises(ValueError, match="text, author, and work are required"):
-        service.create(item(text="---"))
+        service.create(invalid)
 
 
 def test_daily_assignment_is_stable_and_recycles_after_cycle(
@@ -119,8 +120,9 @@ def test_daily_assignment_is_stable_and_recycles_after_cycle(
 
 def test_no_published_quote_cannot_be_assigned(service: QuoteService) -> None:
     service.create(item(status=QuoteStatus.DRAFT))
+    requested_date = date(2026, 7, 29)
     with pytest.raises(LookupError):
-        service.ensure_daily_assignment(date(2026, 7, 29))
+        service.ensure_daily_assignment(requested_date)
 
 
 def test_daily_assignment_survives_unpublishing_but_future_days_exclude_quote(
