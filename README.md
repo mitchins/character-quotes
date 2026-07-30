@@ -28,6 +28,35 @@ The default database is `character_quotes.sqlite3`; set
 `CHARACTER_QUOTES_DATABASE` to a path or SQLite URL in a service deployment.
 Keep the API on loopback unless a trusted authenticating proxy protects it.
 
+## Container deployment
+
+The published image is `ghcr.io/mitchins/character-quotes:latest`. The base
+Compose stack keeps the API on its internal Docker network, where a colocated
+reverse-proxy service can reach `http://character-quotes:8000` without
+publishing a host port.
+
+For intentional LAN exposure, clone this repository and run:
+
+```sh
+docker compose -f compose.yaml -f compose.lan.yaml up -d
+curl http://localhost:8000/healthz
+```
+
+`compose.yaml` persists the catalogue in its named `character-quotes-data`
+volume. `compose.lan.yaml` is the explicit host-port override. The API has no
+authentication: put it behind a trusted, authenticated proxy before exposing
+it beyond a trusted LAN.
+
+To exercise the same stack before an image is published, build locally:
+
+```sh
+docker compose -f compose.yaml -f compose.local.yaml up --build
+```
+
+Each push to `main` publishes `latest` and a short SHA tag to GHCR. A nightly
+workflow rebuilds and publishes `nightly` plus a dated nightly tag. Nightly tags
+are convenience rebuilds, not a compatibility or hardened-release promise.
+
 ## Behaviour
 
 An exact normalized match in the same work/character is rejected. Exact text
