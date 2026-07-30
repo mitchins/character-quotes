@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "description": "Small public-domain seed catalogue for local development and tests. Text follows the cited Project Gutenberg editions; verify against your deployment's jurisdiction before serving publicly.",
+  "quotes": [
+    {
+      "text": "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+      "author": "Jane Austen",
+      "work": "Pride and Prejudice",
+      "citation": "Chapter 1",
+      "source_url": "https://www.gutenberg.org/ebooks/1342",
+      "status": "published"
+    },
+    {
+      "text": "Vanity and pride are different things, though the words are often used synonymously.",
+      "author": "Jane Austen",
+      "work": "Pride and Prejudice",
+      "character": "Mary Bennet",
+      "citation": "Chapter 5",
+      "source_url": "https://www.gutenberg.org/ebooks/1342",
+      "status": "published"
+    },
+    {
+      "text": "I could easily forgive his pride, if he had not mortified mine.",
+      "author": "Jane Austen",
+      "work": "Pride and Prejudice",
+      "character": "Elizabeth Bennet",
+      "citation": "Chapter 5",
+      "source_url": "https://www.gutenberg.org/ebooks/1342",
+      "status": "published"
+    },
+    {
+      "text": "I am no bird; and no net ensnares me: I am a free human being with an independent will.",
+      "author": "Charlotte Brontë",
+      "work": "Jane Eyre",
+      "character": "Jane Eyre",
+      "citation": "Chapter 23",
+      "source_url": "https://www.gutenberg.org/ebooks/1260",
+      "status": "published"
+    },
+    {
+      "text": "I have as much soul as you,—and full as much heart!",
+      "author": "Charlotte Brontë",
+      "work": "Jane Eyre",
+      "character": "Jane Eyre",
+      "citation": "Chapter 23",
+      "source_url": "https://www.gutenberg.org/ebooks/1260",
+      "status": "published"
+    },
+    {
+      "text": "You see, but you do not observe.",
+      "author": "Arthur Conan Doyle",
+      "work": "The Adventures of Sherlock Holmes",
+      "series": "Sherlock Holmes",
+      "character": "Sherlock Holmes",
+      "citation": "A Scandal in Bohemia",
+      "source_url": "https://www.gutenberg.org/ebooks/1661",
+      "status": "published"
+    },
+    {
+      "text": "Data! data! data! I can't make bricks without clay.",
+      "author": "Arthur Conan Doyle",
+      "work": "The Adventures of Sherlock Holmes",
+      "series": "Sherlock Holmes",
+      "character": "Sherlock Holmes",
+      "citation": "The Adventure of the Copper Beeches",
+      "source_url": "https://www.gutenberg.org/ebooks/1661",
+      "status": "published"
+    },
+    {
+      "text": "I never guess. It is a shocking habit—destructive to the logical faculty.",
+      "author": "Arthur Conan Doyle",
+      "work": "The Sign of the Four",
+      "series": "Sherlock Holmes",
+      "character": "Sherlock Holmes",
+      "citation": "Chapter I",
+      "source_url": "https://www.gutenberg.org/ebooks/2097",
+      "status": "published"
+    },
+    {
+      "text": "There is nothing more deceptive than an obvious fact.",
+      "author": "Arthur Conan Doyle",
+      "work": "The Boscombe Valley Mystery",
+      "series": "Sherlock Holmes",
+      "character": "Sherlock Holmes",
+      "citation": "The Boscombe Valley Mystery",
+      "source_url": "https://www.gutenberg.org/ebooks/1661",
+      "status": "published"
+    }
+  ]
+}
