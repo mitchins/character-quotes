@@ -114,3 +114,23 @@ def test_http_writes_can_be_disabled_for_container_deployment(
     )
 
     assert response.status_code == 405
+
+
+def test_enabled_http_writes_still_require_bearer(monkeypatch: MonkeyPatch) -> None:
+    engine = make_engine("sqlite://")
+    initialize(engine)
+    monkeypatch.setattr(api, "SessionLocal", session_factory(engine))
+    monkeypatch.setattr(api, "search_auth", SearchAuth(None, "search-token"))
+    monkeypatch.setenv("CHARACTER_QUOTES_HTTP_WRITES", "true")
+    client = TestClient(api.app)
+    payload = {"text": "Text", "author": "Author", "work": "Work"}
+
+    assert client.post("/v1/quotes", json=payload).status_code == 401
+    assert (
+        client.post(
+            "/v1/quotes",
+            json=payload,
+            headers={"Authorization": "Bearer search-token"},
+        ).status_code
+        == 201
+    )

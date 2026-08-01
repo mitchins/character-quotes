@@ -15,7 +15,7 @@ from fastapi import HTTPException, Request, status
 AUTH_ENABLED = "CHARACTER_QUOTES_SEARCH_AUTH"
 AUTH_TOKEN = "CHARACTER_QUOTES_SEARCH_BEARER_TOKEN"
 VERIFIER_FILE = "CHARACTER_QUOTES_SEARCH_BEARER_VERIFIER_FILE"
-DEFAULT_VERIFIER_FILE = "/data/search-bearer-token.scrypt"
+DEFAULT_VERIFIER_FILE = "/data/search-bearer-token.verifier"
 
 
 def enabled(value: str | None) -> bool:
@@ -50,6 +50,7 @@ class TokenVerifier:
                 base64.b64encode(self.digest).decode("ascii"),
             )
         )
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         temporary_path = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
         try:
             descriptor = os.open(
@@ -72,7 +73,7 @@ class TokenVerifier:
 
 
 def derive(token: str, salt: bytes) -> bytes:
-    return hashlib.scrypt(token.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
+    return hmac.new(salt, token.encode("utf-8"), hashlib.sha256).digest()
 
 
 @dataclass(frozen=True)

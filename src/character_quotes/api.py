@@ -81,7 +81,7 @@ def require_search_auth(request: Request) -> None:
 
 
 def require_http_writes() -> None:
-    if os.getenv("CHARACTER_QUOTES_HTTP_WRITES", "true") == "true":
+    if enabled(os.getenv("CHARACTER_QUOTES_HTTP_WRITES", "true")):
         return
     raise HTTPException(status.HTTP_405_METHOD_NOT_ALLOWED, "HTTP writes are disabled")
 
@@ -124,6 +124,7 @@ def healthz() -> dict[str, str]:
 def create_quote(
     payload: QuotePayload,
     db: Annotated[Session, Depends(session)],
+    _auth: Annotated[None, Depends(require_search_auth)],
     _: Annotated[None, Depends(require_http_writes)],
     allow_exact_reuse: bool = False,
 ) -> dict[str, object]:
@@ -210,6 +211,7 @@ def update_quote(
     quote_id: str,
     payload: QuotePayload,
     db: Annotated[Session, Depends(session)],
+    _auth: Annotated[None, Depends(require_search_auth)],
     _: Annotated[None, Depends(require_http_writes)],
     allow_exact_reuse: bool = False,
 ) -> dict[str, object]:

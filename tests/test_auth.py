@@ -15,7 +15,7 @@ from character_quotes.auth import (
 def test_generated_search_token_is_printed_once_and_only_its_verifier_persists(
     monkeypatch: MonkeyPatch, tmp_path: Path, capsys: CaptureFixture[str]
 ) -> None:
-    verifier_path = tmp_path / "search-token.scrypt"
+    verifier_path = tmp_path / "configuration" / "search-token.verifier"
     monkeypatch.setenv(AUTH_ENABLED, "true")
     monkeypatch.setenv(VERIFIER_FILE, str(verifier_path))
 
@@ -40,7 +40,7 @@ def test_generated_search_token_is_printed_once_and_only_its_verifier_persists(
 def test_explicit_search_token_does_not_create_a_verifier(
     monkeypatch: MonkeyPatch, tmp_path: Path
 ) -> None:
-    verifier_path = tmp_path / "search-token.scrypt"
+    verifier_path = tmp_path / "search-token.verifier"
     monkeypatch.setenv(AUTH_ENABLED, "true")
     monkeypatch.setenv("CHARACTER_QUOTES_SEARCH_BEARER_TOKEN", "secret")
     monkeypatch.setenv(VERIFIER_FILE, str(verifier_path))
