@@ -43,9 +43,23 @@ curl http://localhost:8000/healthz
 ```
 
 `compose.yaml` persists the catalogue in its named `character-quotes-data`
-volume. `compose.lan.yaml` is the explicit host-port override. The API has no
-authentication: put it behind a trusted, authenticated proxy before exposing
-it beyond a trusted LAN.
+volume. `compose.lan.yaml` is the explicit host-port override. The daily feed
+is deliberately anonymous on a trusted LAN; catalogue search requires Bearer
+authentication and HTTP writes are disabled in the container stack. Curate via
+the CLI instead.
+
+On a first container start, the stack prints one generated search Bearer token
+to its startup output and persists only its verifier in `/data`. Save the token
+immediately, then use it for catalogue queries:
+
+```sh
+curl -H "Authorization: Bearer $CHARACTER_QUOTES_SEARCH_BEARER_TOKEN" \
+  'http://container-host:8000/v1/quotes/check?text=Example'
+```
+
+Set `CHARACTER_QUOTES_SEARCH_BEARER_TOKEN` explicitly to use a token supplied
+by your secret store instead. Do not expose the container port outside the
+trusted LAN.
 
 To exercise the same stack before an image is published, build locally:
 

@@ -5,6 +5,10 @@ services:
       - "8000"
     environment:
       CHARACTER_QUOTES_DATABASE: sqlite:////data/character_quotes.sqlite3
+      CHARACTER_QUOTES_SEARCH_AUTH: "true"
+      CHARACTER_QUOTES_SEARCH_BEARER_TOKEN: ${CHARACTER_QUOTES_SEARCH_BEARER_TOKEN:-}
+      CHARACTER_QUOTES_HTTP_WRITES: "false"
+      CHARACTER_QUOTES_DISABLE_DOCS: "true"
     volumes:
       - character-quotes-data:/data
     restart: unless-stopped

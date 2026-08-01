@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
 from character_quotes import api
+from character_quotes.auth import SearchAuth
 from character_quotes.database import initialize, make_engine, session_factory
 
 
@@ -79,3 +80,37 @@ def test_patch_missing_quote_returns_not_found(monkeypatch: MonkeyPatch) -> None
         json={"text": "Text", "author": "Author", "work": "Work"},
     )
     assert response.status_code == 404
+
+
+def test_search_routes_require_bearer_but_daily_does_not(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    engine = make_engine("sqlite://")
+    initialize(engine)
+    monkeypatch.setattr(api, "SessionLocal", session_factory(engine))
+    monkeypatch.setattr(api, "search_auth", SearchAuth(None, "search-token"))
+    client = TestClient(api.app)
+
+    assert client.get("/v1/quotes").status_code == 401
+    assert client.get("/v1/quotes").headers["www-authenticate"] == "Bearer"
+    assert client.get("/v1/quotes/daily").status_code == 404
+    assert client.get(
+        "/v1/quotes/check",
+        params={"text": "A quote"},
+        headers={"Authorization": "Bearer search-token"},
+    ).json() == {"exact": [], "candidates": []}
+
+
+def test_http_writes_can_be_disabled_for_container_deployment(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    engine = make_engine("sqlite://")
+    initialize(engine)
+    monkeypatch.setattr(api, "SessionLocal", session_factory(engine))
+    monkeypatch.setenv("CHARACTER_QUOTES_HTTP_WRITES", "false")
+
+    response = TestClient(api.app).post(
+        "/v1/quotes", json={"text": "Text", "author": "Author", "work": "Work"}
+    )
+
+    assert response.status_code == 405
