@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable, Generator
 from datetime import date
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .auth import SearchAuth, enabled
 from .database import (
     begin_catalogue_mutation,
     begin_daily_assignment,
@@ -30,7 +32,15 @@ from .service import (
 engine = make_engine()
 initialize(engine)
 SessionLocal = session_factory(engine)
-app = FastAPI(title="Character Quotes", version="0.2.0")
+docs_disabled = enabled(os.getenv("CHARACTER_QUOTES_DISABLE_DOCS"))
+app = FastAPI(
+    title="Character Quotes",
+    version="0.2.0",
+    docs_url=None if docs_disabled else "/docs",
+    redoc_url=None if docs_disabled else "/redoc",
+    openapi_url=None if docs_disabled else "/openapi.json",
+)
+search_auth = SearchAuth.from_environment()
 NOT_FOUND: dict[int | str, dict[str, Any]] = {
     404: {"description": "Quote or daily assignment not found"}
 }
@@ -64,6 +74,16 @@ def session() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def require_search_auth(request: Request) -> None:
+    search_auth.require(request)
+
+
+def require_http_writes() -> None:
+    if enabled(os.getenv("CHARACTER_QUOTES_HTTP_WRITES", "true")):
+        return
+    raise HTTPException(status.HTTP_405_METHOD_NOT_ALLOWED, "HTTP writes are disabled")
 
 
 def mutation(operation: Callable[[], Quote], db: Session) -> dict[str, object]:
@@ -104,6 +124,8 @@ def healthz() -> dict[str, str]:
 def create_quote(
     payload: QuotePayload,
     db: Annotated[Session, Depends(session)],
+    _auth: Annotated[None, Depends(require_search_auth)],
+    _: Annotated[None, Depends(require_http_writes)],
     allow_exact_reuse: bool = False,
 ) -> dict[str, object]:
     return mutation(
@@ -117,6 +139,7 @@ def create_quote(
 @app.get("/v1/quotes")
 def list_quotes(
     db: Annotated[Session, Depends(session)],
+    _: Annotated[None, Depends(require_search_auth)],
     quote_status: Annotated[QuoteStatus | None, Query(alias="status")] = None,
 ) -> list[dict[str, object]]:
     return [serialize(quote) for quote in QuoteService(db).list(quote_status)]
@@ -124,16 +147,33 @@ def list_quotes(
 
 @app.get("/v1/quotes/duplicates")
 def duplicate_quotes(
-    text: str, db: Annotated[Session, Depends(session)]
+    text: Annotated[str, Query(min_length=1, max_length=10000)],
+    db: Annotated[Session, Depends(session)],
+    _: Annotated[None, Depends(require_search_auth)],
 ) -> list[dict[str, object]]:
     return [serialize(quote) for quote in QuoteService(db).collisions(text)]
 
 
 @app.get("/v1/quotes/candidates")
 def candidate_quotes(
-    text: str, db: Annotated[Session, Depends(session)]
+    text: Annotated[str, Query(min_length=1, max_length=10000)],
+    db: Annotated[Session, Depends(session)],
+    _: Annotated[None, Depends(require_search_auth)],
 ) -> list[dict[str, object]]:
     return list(QuoteService(db).candidates(text))
+
+
+@app.get("/v1/quotes/check")
+def check_quote(
+    text: Annotated[str, Query(min_length=1, max_length=10000)],
+    db: Annotated[Session, Depends(session)],
+    _: Annotated[None, Depends(require_search_auth)],
+) -> dict[str, object]:
+    catalogue = QuoteService(db)
+    return {
+        "exact": [serialize(item) for item in catalogue.collisions(text)],
+        "candidates": catalogue.candidates(text),
+    }
 
 
 @app.get("/v1/quotes/daily", responses=NOT_FOUND)
@@ -156,7 +196,9 @@ def daily_quote(
 
 @app.get("/v1/quotes/{quote_id}", responses=NOT_FOUND)
 def get_quote(
-    quote_id: str, db: Annotated[Session, Depends(session)]
+    quote_id: str,
+    db: Annotated[Session, Depends(session)],
+    _: Annotated[None, Depends(require_search_auth)],
 ) -> dict[str, object]:
     try:
         return serialize(QuoteService(db).get(quote_id))
@@ -169,6 +211,8 @@ def update_quote(
     quote_id: str,
     payload: QuotePayload,
     db: Annotated[Session, Depends(session)],
+    _auth: Annotated[None, Depends(require_search_auth)],
+    _: Annotated[None, Depends(require_http_writes)],
     allow_exact_reuse: bool = False,
 ) -> dict[str, object]:
     return mutation(
