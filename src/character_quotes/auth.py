@@ -50,15 +50,22 @@ class TokenVerifier:
                 base64.b64encode(self.digest).decode("ascii"),
             )
         )
+        temporary_path = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
         try:
-            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        except FileExistsError:
-            return False
-        with os.fdopen(descriptor, "w", encoding="ascii") as stream:
-            stream.write(encoded)
-            stream.flush()
-            os.fsync(stream.fileno())
-        return True
+            descriptor = os.open(
+                temporary_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+            )
+            with os.fdopen(descriptor, "w", encoding="ascii") as stream:
+                stream.write(encoded)
+                stream.flush()
+                os.fsync(stream.fileno())
+            try:
+                os.link(temporary_path, path)
+            except FileExistsError:
+                return False
+            return True
+        finally:
+            temporary_path.unlink(missing_ok=True)
 
     def matches(self, token: str) -> bool:
         return hmac.compare_digest(self.digest, derive(token, self.salt))
