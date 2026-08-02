@@ -16,11 +16,9 @@ Never call a temporary, local, or test database a completed catalogue ingest.
 A database under `/tmp`, a local default SQLite file, or an in-memory database
 is a dry run only; label it clearly and report that it had no production effect.
 
-For this personal deployment, the production catalogue is the
-`character-quotes` stack on **Media-NAS**, with persistent data at
-`/data/containers/character_quotes/character_quotes.sqlite3` and its LAN API
-at `http://192.168.1.24:8135`. Treat that target as production only when the
-user explicitly asks for a live change. Do not expose or print bearer tokens.
+Treat a catalogue as production only when the user has explicitly identified
+the target instance or authorised a documented deployment target. State the
+exact target used in the handoff, but never expose or print bearer tokens.
 
 The LAN API's search endpoints require Bearer authentication and HTTP writes
 are intentionally disabled. A research agent must therefore hand approved
