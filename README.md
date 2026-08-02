@@ -8,6 +8,8 @@ It is not a legal provenance archive, social editor, or knowledge graph.
 Citation and source URL are optional context; the curator owns attribution.
 The operating contract and scope are in
 [docs/mission-and-hardening-plan.md](docs/mission-and-hardening-plan.md).
+The lightweight, human-reviewed gathering loop is documented in
+[docs/quote-gathering-playbook.md](docs/quote-gathering-playbook.md).
 
 ## Quick start
 
