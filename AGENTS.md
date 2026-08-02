@@ -20,6 +20,10 @@ Treat a catalogue as production only when the user has explicitly identified
 the target instance or authorised a documented deployment target. State the
 exact target used in the handoff, but never expose or print bearer tokens.
 
+If `README.local.md` exists, read it before any target-specific action. It is
+intentionally untracked and may identify local deployment targets; never add
+its contents to commits, patches, or external reports.
+
 The LAN API's search endpoints require Bearer authentication and HTTP writes
 are intentionally disabled. A research agent must therefore hand approved
 records to an authorised curator path; it must not work around those boundaries
